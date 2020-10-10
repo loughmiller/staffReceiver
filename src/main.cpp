@@ -1,7 +1,9 @@
 #include <VirtualWire.h>
 
-const int led_pin = 13;
-const int receive_pin = 12;
+const uint_fast8_t led_pin = 13;
+const uint_fast8_t receive_pin = 12;
+const byte authByteStart = 117;
+const byte authByteEnd = 115;
 
 void setup()
 {
@@ -16,6 +18,8 @@ void setup()
     pinMode(led_pin, OUTPUT);
 }
 
+uint_fast8_t lastMessageID = 255;
+
 void loop()
 {
     uint8_t buf[VW_MAX_MESSAGE_LEN];
@@ -23,14 +27,22 @@ void loop()
 
     if (vw_get_message(buf, &buflen)) // Non-blocking
     {
-	    int i;
+        uint_fast8_t messageID = buf[1];
 
-        digitalWrite(led_pin, HIGH); // Flash a light to show received good message
-        delay(100);                  // leave the LED on long enough to see it
-        // Message with a good checksum received, print it.
+        // Serial.print(lastMessageID);
+        // Serial.print("\t");
+        // Serial.print(messageID);
+        // Serial.println("");
+
+        if (messageID == lastMessageID) {
+            return;
+        }
+
+        lastMessageID = messageID;
+
         Serial.print("Got: ");
 
-        for (i = 0; i < buflen; i++)
+        for (uint_fast8_t i = 0; i < buflen; i++)
         {
             Serial.print(buf[i]);
             Serial.print(' ');
