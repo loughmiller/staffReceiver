@@ -27,12 +27,12 @@ void loop()
 
     if (vw_get_message(buf, &buflen)) // Non-blocking
     {
-        uint_fast8_t messageID = buf[1];
+        if ((buf[0] != authByteStart) || (buf[buflen - 1] != authByteEnd)) {
+            // bad message
+            return;
+        }
 
-        // Serial.print(lastMessageID);
-        // Serial.print("\t");
-        // Serial.print(messageID);
-        // Serial.println("");
+        uint_fast8_t messageID = buf[1];
 
         if (messageID == lastMessageID) {
             return;
