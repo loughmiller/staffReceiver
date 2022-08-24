@@ -1,18 +1,23 @@
 #include <VirtualWire.h>
+#include <RH_ASK.h>
+#include <SPI.h>
 #include <i2c_t3.h>
 
 const uint_fast8_t receive_pin = 12;
 const byte authByteStart = 117;
 const byte authByteEnd = 115;
 
+RH_ASK driver(2000, receive_pin);
+
 void setup() {
   while(!Serial && millis() < 10000);
   Serial.println("setup");
 
-  // Initialise the IO and ISR
-  vw_set_rx_pin(receive_pin);
-  vw_setup(2000);	              // Bits per sec
-  vw_rx_start();                // Start the receiver PLL running
+
+  // Initialise radiohead
+  if (!driver.init()) {
+    Serial.println("init failed");
+  }
 
   Wire.begin(); // join i2c bus (address optional for master)
 }
@@ -20,12 +25,12 @@ void setup() {
 uint_fast8_t lastMessageID = 255;
 
 void loop() {
-  uint8_t buf[VW_MAX_MESSAGE_LEN];
-  uint8_t buflen = VW_MAX_MESSAGE_LEN;
+  uint8_t buf[20];
+  uint8_t buflen = sizeof(buf);
 
-  if (vw_get_message(buf, &buflen)) {
+  if (driver.recv(buf, &buflen)) {
     if ((buf[0] != authByteStart) || (buf[buflen - 1] != authByteEnd)) {
-      // bad message
+      Serial.println("bad message");
       return;
     }
 
@@ -40,7 +45,7 @@ void loop() {
     Wire.beginTransmission(4); // transmit to device #4
 
     // skip the auth & messageID bytes
-    for (uint_fast8_t i = 2; i < buflen - 1; i++) {
+    for (uint8_t i = 2; i < buflen - 1; i++) {
       Wire.write(buf[i]);
     }
     Wire.endTransmission();    // stop transmitting
